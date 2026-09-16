@@ -1,0 +1,64 @@
+name: Publish npm packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package to publish
+        required: true
+        type: choice
+        default: all
+        options:
+          - all
+          - voice
+          - voice-grammar-en
+          - asr
+          - voice-ui
+      dry_run:
+        description: Validate and pack without publishing
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'dobreadi/agentfiber-voice' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.6.2
+      - run: pnpm install --frozen-lockfile
+      - name: Validate source and packed consumers
+        run: |
+          pnpm build
+          pnpm typecheck
+          pnpm test
+          pnpm test:release
+          pnpm check:docs
+          pnpm smoke:pack
+      - name: Publish selected packages
+        env:
+          RELEASE_PACKAGE: ${{ inputs.package }}
+          RELEASE_DRY_RUN: ${{ inputs.dry_run }}
+        run: node scripts/publish.mjs
