@@ -117,7 +117,7 @@ void createWebSpeechTranscriptSource;
   console.log(
     JSON.stringify(
       {
-        package: "@agentfiber/asr@0.1.0",
+        package: "@agentfiber/asr@0.1.1",
         tarball: artifact.tarballName,
         sha256: artifact.sha256,
         dependencyGraph: {

@@ -104,7 +104,7 @@ if (result.kind === "open-settings") parseEnglishDirectionalKey("left");
   console.log(
     JSON.stringify(
       {
-        package: "@agentfiber/voice-grammar-en@0.1.2",
+        package: "@agentfiber/voice-grammar-en@0.1.3",
         tarball: artifact.tarballName,
         sha256: artifact.sha256,
         dependencyGraph: manifest.dependencies,

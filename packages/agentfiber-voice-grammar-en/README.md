@@ -89,15 +89,15 @@ horizontal or 2 vertical steps, and other forms mean one step. Counts are capped
 
 ## Install the shared usage skill
 
-The portable AgentFiber voice usage skill ships from `@agentfiber/voice@0.1.2`, rather than being
+The portable AgentFiber voice usage skill ships from `@agentfiber/voice@0.1.3`, rather than being
 duplicated in every locale adapter. Install it into a project with either command:
 
 ```sh
 # Claude Code
-npx --yes --package @agentfiber/voice@0.1.2 agentfiber-voice-skill install --target claude-code
+npx --yes --package @agentfiber/voice@0.1.3 agentfiber-voice-skill install --target claude-code
 
 # Codex and the open .agents convention
-npx --yes --package @agentfiber/voice@0.1.2 agentfiber-voice-skill install --target agents
+npx --yes --package @agentfiber/voice@0.1.3 agentfiber-voice-skill install --target agents
 ```
 
 The grammar dependency remains `@agentfiber/voice: ^0.1.0`. Package versions are independent.

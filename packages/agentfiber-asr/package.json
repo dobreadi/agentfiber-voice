@@ -1,6 +1,6 @@
 {
   "name": "@agentfiber/asr",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Provider-neutral audio capture and speech transcription contracts for AgentFiber.",
   "license": "MIT",
   "repository": {
