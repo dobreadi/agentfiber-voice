@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -50,20 +50,56 @@ function newerThan(version, previous) {
 
 export async function preflight(manifests, lookup = registryVersion) {
   // Check the entire selection before publishing any package.
+  const existing = [];
   for (const manifest of manifests) {
     stableVersion(manifest.version);
     if (manifest.private || manifest.repository?.url !== REPOSITORY) throw new Error(`Invalid release manifest for ${manifest.name}`);
-    if (await lookup(manifest.name, manifest.version)) throw new Error(`${manifest.name}@${manifest.version} already exists. Bump its version or select a remaining package individually.`);
+    const published = await lookup(manifest.name, manifest.version);
+    if (published && (published.repository?.url !== REPOSITORY || published.name !== manifest.name || published.version !== manifest.version)) throw new Error(`Existing release identity mismatch for ${manifest.name}`);
+    existing.push(published);
     const latest = await lookup(manifest.name, 'latest');
     if (!latest) throw new Error(`Expected existing npm package ${manifest.name}; configure ownership before publishing`);
-    if (!newerThan(manifest.version, latest.version)) throw new Error(`${manifest.name}@${manifest.version} would move latest backwards from ${latest.version}`);
+    if (!(published && latest.version === manifest.version) && !newerThan(manifest.version, latest.version)) throw new Error(`${manifest.name}@${manifest.version} would move latest backwards from ${latest.version}`);
   }
+  return existing;
 }
 
 export function verifyPublished(manifest, artifact, published) {
   if (published?.name !== manifest.name || published.version !== manifest.version || published.repository?.url !== REPOSITORY || published.dist?.integrity !== artifact.integrity) {
     throw new Error(`Registry metadata or tarball integrity mismatch for ${manifest.name}@${manifest.version}`);
   }
+}
+
+export function archiveContents(tarball) {
+  const names = execFileSync('tar', ['-tzf', tarball], { encoding: 'utf8' }).trim().split('\n').filter(name => !name.endsWith('/')).sort();
+  if (new Set(names).size !== names.length || names.some(name => !name.startsWith('package/') || name.split('/').includes('..'))) throw new Error('Invalid package archive paths');
+  return names.map(name => [name, createHash('sha256').update(execFileSync('tar', ['-xOf', tarball, '--', name])).digest('hex')]);
+}
+
+export async function verifyExisting(manifest, artifact, published, destination) {
+  verifyPublished(manifest, { integrity: published.dist?.integrity }, published);
+  const url = new URL(published.dist.tarball);
+  if (url.protocol !== 'https:' || url.hostname !== 'registry.npmjs.org') throw new Error('Unexpected registry tarball origin');
+  const response = await fetch(url, { signal: AbortSignal.timeout(30_000), redirect: 'error' });
+  if (!response.ok) throw new Error(`Registry tarball download failed: HTTP ${response.status}`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (`sha512-${createHash('sha512').update(bytes).digest('base64')}` !== published.dist.integrity) throw new Error('Registry tarball integrity mismatch');
+  writeFileSync(destination, bytes);
+  // gzip/tar metadata can vary across operating systems; compare every packed path and file byte.
+  if (JSON.stringify(archiveContents(artifact.tarball)) !== JSON.stringify(archiveContents(destination))) throw new Error(`Existing package contents differ for ${manifest.name}@${manifest.version}`);
+}
+
+export async function waitForPublication(manifest, artifact, lookup = registryVersion, pause = ms => new Promise(resolve => setTimeout(resolve, ms)), attempts = 61) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const published = await lookup(manifest.name, manifest.version);
+    if (published) {
+      verifyPublished(manifest, artifact, published);
+      const latest = await lookup(manifest.name, 'latest');
+      if (latest?.version === manifest.version) return;
+    }
+    if (attempt + 1 < attempts) await pause(10_000);
+  }
+  throw new Error(`npm accepted ${manifest.name}@${manifest.version}, but registry processing or latest propagation is still pending. Re-run this selection later; matching published artifacts are verified and skipped.`);
 }
 
 function report(text) {
@@ -76,7 +112,7 @@ async function main() {
   const dryRun = parseDryRun(process.env.RELEASE_DRY_RUN);
   if (!dryRun) assertPublishContext(process.env);
   const manifests = selected.map(key => JSON.parse(readFileSync(join(ROOT, 'packages', `agentfiber-${key}`, 'package.json'), 'utf8')));
-  await preflight(manifests);
+  const existing = await preflight(manifests);
   const temp = mkdtempSync(join(tmpdir(), 'agentfiber-release-'));
   try {
     const artifacts = selected.map((key, i) => {
@@ -86,22 +122,23 @@ async function main() {
       if (artifact.manifest.name !== manifests[i].name || artifact.manifest.version !== manifests[i].version || artifact.manifest.repository?.url !== REPOSITORY) throw new Error(`Packed identity mismatch for ${key}`);
       return { ...artifact, integrity: `sha512-${createHash('sha512').update(readFileSync(artifact.tarball)).digest('base64')}` };
     });
+    // Verify every existing artifact before any new publication; retries may only skip identical bytes.
+    for (let i = 0; i < selected.length; i++) {
+      if (existing[i]) await verifyExisting(manifests[i], artifacts[i], existing[i], join(temp, `existing-${i}.tgz`));
+    }
     for (let i = 0; i < selected.length; i++) {
       const manifest = manifests[i], artifact = artifacts[i];
       if (dryRun) {
         report(`Dry run: ${manifest.name}@${manifest.version}; SHA-256 ${artifact.sha256}. Nothing published.`);
         continue;
       }
-      execFileSync('npm', ['publish', artifact.tarball, '--access', 'public', '--tag', 'latest', '--provenance', '--registry', REGISTRY], { cwd: ROOT, stdio: 'inherit' });
-      let published;
-      for (let attempt = 0; attempt < 6; attempt++) {
-        published = await registryVersion(manifest.name, manifest.version);
-        if (published) break;
-        await new Promise(resolve => setTimeout(resolve, 5_000));
+      if (existing[i]) {
+        await waitForPublication(manifest, { integrity: existing[i].dist.integrity });
+        report(`Already published and verified: ${manifest.name}@${manifest.version}; identical package contents, no publish repeated.`);
+        continue;
       }
-      verifyPublished(manifest, artifact, published);
-      const latest = await registryVersion(manifest.name, 'latest');
-      if (latest?.version !== manifest.version) throw new Error(`latest tag mismatch for ${manifest.name}`);
+      execFileSync('npm', ['publish', artifact.tarball, '--access', 'public', '--tag', 'latest', '--provenance', '--registry', REGISTRY], { cwd: ROOT, stdio: 'inherit' });
+      await waitForPublication(manifest, artifact);
       report(`Published ${manifest.name}@${manifest.version}; SHA-256 ${artifact.sha256}; repository, integrity, and latest verified.`);
     }
   } finally {
