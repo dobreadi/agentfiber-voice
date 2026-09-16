@@ -1,0 +1,57 @@
+{
+  "name": "@agentfiber/voice-grammar-en",
+  "version": "0.1.2",
+  "description": "Optional extensible English UI grammar for AgentFiber voice matchers.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dobreadi/agentfiber-voice.git",
+    "directory": "packages/agentfiber-voice-grammar-en"
+  },
+  "homepage": "https://github.com/dobreadi/agentfiber-voice/tree/main/packages/agentfiber-voice-grammar-en#readme",
+  "bugs": {
+    "url": "https://github.com/dobreadi/agentfiber-voice/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./directional": {
+      "types": "./dist/directional.d.ts",
+      "import": "./dist/directional.js",
+      "default": "./dist/directional.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "pnpm build",
+    "prepack": "pnpm build",
+    "smoke:pack": "node ../../scripts/smoke-agentfiber-voice-grammar-en-pack.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@agentfiber/voice": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "vitest": "2.1.5"
+  }
+}

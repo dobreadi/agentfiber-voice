@@ -1,0 +1,72 @@
+{
+  "name": "@agentfiber/voice-ui",
+  "version": "0.1.0",
+  "description": "Renderer-neutral voice orb and level visualisation primitives for AgentFiber.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dobreadi/agentfiber-voice.git",
+    "directory": "packages/agentfiber-voice-ui"
+  },
+  "homepage": "https://github.com/dobreadi/agentfiber-voice/tree/main/packages/agentfiber-voice-ui#readme",
+  "bugs": {
+    "url": "https://github.com/dobreadi/agentfiber-voice/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./canvas": {
+      "types": "./dist/canvas.d.ts",
+      "import": "./dist/canvas.js",
+      "default": "./dist/canvas.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "default": "./dist/react.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "pnpm build",
+    "prepack": "pnpm build",
+    "smoke:pack": "node ../../scripts/smoke-agentfiber-voice-ui-pack.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "19.2.15",
+    "@types/react-dom": "19.2.3",
+    "jsdom": "25.0.1",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "typescript": "5.6.3",
+    "vitest": "2.1.5"
+  }
+}

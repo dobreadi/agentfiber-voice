@@ -1,0 +1,54 @@
+{
+  "name": "@agentfiber/voice",
+  "version": "0.1.2",
+  "description": "Product-neutral deterministic voice matching and dispatch contracts for AgentFiber.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dobreadi/agentfiber-voice.git",
+    "directory": "packages/agentfiber-voice"
+  },
+  "homepage": "https://github.com/dobreadi/agentfiber-voice/tree/main/packages/agentfiber-voice#readme",
+  "bugs": {
+    "url": "https://github.com/dobreadi/agentfiber-voice/issues"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "agentfiber-voice-skill": "./bin/agentfiber-voice-skill.mjs"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "pnpm build",
+    "prepack": "pnpm build",
+    "smoke:pack": "node ../../scripts/smoke-agentfiber-voice-pack.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run && node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "vitest": "2.1.5"
+  }
+}
