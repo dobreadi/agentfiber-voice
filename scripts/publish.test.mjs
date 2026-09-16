@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertPublishContext, parseDryRun, preflight, registryVersion, selectPackages, verifyPublished } from './publish.mjs';
+import { assertPublishContext, parseDryRun, preflight, registryVersion, selectPackages, verifyPublished, waitForPublication } from './publish.mjs';
 const repository = { url: 'git+https://github.com/dobreadi/agentfiber-voice.git' };
 const voice = { name: '@agentfiber/voice', version: '0.1.3', repository };
 
@@ -26,17 +26,17 @@ test('only registry 404 counts as a missing version', async () => {
     await assert.rejects(registryVersion(voice.name, voice.version, async () => new Response('', { status })), /Registry lookup failed/);
   }
 });
-test('preflight accepts a new patch and rejects existing or backwards releases', async () => {
+test('preflight accepts new patches and matching existing releases but rejects downgrades', async () => {
   await preflight([voice], async (_name, version) => version === 'latest' ? { version: '0.1.2' } : null);
-  await assert.rejects(preflight([voice], async () => voice), /already exists/);
+  assert.deepEqual(await preflight([voice], async () => voice), [voice]);
   await assert.rejects(preflight([voice], async (_name, version) => version === 'latest' ? { version: '0.2.0' } : null), /backwards/);
 });
 test('all-selection preflight catches a later package conflict before publication', async () => {
   const grammar = { ...voice, name: '@agentfiber/voice-grammar-en' };
   await assert.rejects(preflight([voice, grammar], async (name, version) => {
-    if (name === grammar.name) return grammar;
+    if (name === grammar.name) return { ...grammar, repository: {} };
     return version === 'latest' ? { version: '0.1.2' } : null;
-  }), /voice-grammar-en.*already exists/);
+  }), /Existing release identity mismatch/);
 });
 test('preflight rejects private, unrelated, prerelease, and unknown packages', async () => {
   for (const manifest of [{ ...voice, private: true }, { ...voice, repository: {} }, { ...voice, version: '0.2.0-beta.1' }]) {
@@ -51,4 +51,19 @@ test('verification checks published identity, repository, and exact packed bytes
   for (const change of [{ version: '0.1.2' }, { repository: {} }, { dist: { integrity: 'different' } }]) {
     assert.throws(() => verifyPublished(voice, artifact, { ...published, ...change }), /mismatch/);
   }
+});
+
+test('publication verification tolerates delayed metadata and latest propagation', async () => {
+  const artifact = { integrity: 'sha512-example' };
+  let exactCalls = 0, latestCalls = 0, waits = 0;
+  await waitForPublication(voice, artifact, async (_name, version) => {
+    if (version === 'latest') return { version: ++latestCalls < 2 ? '0.1.2' : '0.1.3' };
+    return ++exactCalls < 2 ? null : { ...voice, dist: artifact };
+  }, async () => { waits++; });
+  assert.equal(waits, 2);
+});
+test('processing timeout distinguishes accepted publication from corrupt artifacts', async () => {
+  const artifact = { integrity: 'sha512-example' };
+  await assert.rejects(waitForPublication(voice, artifact, async () => null, async () => {}, 2), /npm accepted.*pending/);
+  await assert.rejects(waitForPublication(voice, artifact, async () => ({ ...voice, dist: { integrity: 'wrong' } }), async () => {}), /integrity mismatch/);
 });

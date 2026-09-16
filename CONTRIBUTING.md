@@ -43,11 +43,11 @@ The [npm trusted publishing documentation](https://docs.npmjs.com/trusted-publis
 4. Leave **Validate and pack without publishing** checked for a dry run. Uncheck it to publish.
 5. Inspect the run summary for the published versions and verified tarball hashes.
 
-The workflow validates all packages and packed consumers, checks that every selected version is new and newer than its current `latest`, and packs the entire selection before publishing. `all` publishes voice before English grammar, followed by ASR and voice UI. Runs are serialized, and actual publication is restricted to this repository's `main` branch.
+The workflow validates all packages and packed consumers, checks that new versions are newer than their current `latest`, and packs the entire selection before publishing. `all` publishes voice before English grammar, followed by ASR and voice UI. Runs are serialized, and actual publication is restricted to this repository's `main` branch.
 
-Versions come from the manifests; the action does not bump versions. Existing npm versions are immutable. If a run partially publishes before failing, select each remaining package individually on retry. An `all` run fails preflight if any selected version already exists. Registry/authentication errors stop the run rather than being treated as missing versions.
+Versions come from the manifests; the action does not bump versions. Existing npm versions are immutable. If a run partially publishes before failing, retry the same selection. Existing versions are skipped only after their repository identity and packed file contents match after verifying the registry tarball integrity; conflicting artifacts fail before any further publication. Registry/authentication errors stop the run rather than being treated as missing versions.
 
-After each publication the workflow checks repository metadata, exact tarball integrity, and the `latest` tag. Ordinary pushes and PRs run CI only; they never publish.
+After each publication the workflow waits up to ten minutes for npm processing and checks repository metadata, exact tarball integrity, and the `latest` tag. A processing timeout reports that npm already accepted the package rather than claiming the artifact is corrupt. Ordinary pushes and PRs run CI only; they never publish.
 
 To validate release logic locally, run `pnpm test:release`. To exercise preflight and packing without publishing, run `RELEASE_PACKAGE=all RELEASE_DRY_RUN=true node scripts/publish.mjs` after installing and building.
 

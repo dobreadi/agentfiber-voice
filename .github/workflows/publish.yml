@@ -31,7 +31,7 @@ jobs:
   publish:
     if: github.repository == 'dobreadi/agentfiber-voice' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     permissions:
       contents: read
       id-token: write
