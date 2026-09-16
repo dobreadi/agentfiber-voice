@@ -116,7 +116,7 @@ void <VoiceLevelBars level={0.5} barCount={8} />;
   console.log(
     JSON.stringify(
       {
-        package: "@agentfiber/voice-ui@0.1.0",
+        package: "@agentfiber/voice-ui@0.1.1",
         tarball: artifact.tarballName,
         sha256: artifact.sha256,
         dependencyGraph: {

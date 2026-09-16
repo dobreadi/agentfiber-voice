@@ -32,7 +32,7 @@ television/medical vocabulary.
 
 ## Install the AgentFiber voice skill
 
-Version `0.1.2` ships the portable Agent Skills directory with package-choice guidance for the
+Version `0.1.3` ships the portable Agent Skills directory with package-choice guidance for the
 complete AgentFiber voice, ASR, English grammar, and voice UI stack. It includes an explicit,
 fail-closed installer. Project installation does not run during `npm install` and does not symlink
 a package cache into your repository.
@@ -40,7 +40,7 @@ a package cache into your repository.
 For Claude Code:
 
 ```sh
-npx --yes --package @agentfiber/voice@0.1.2 agentfiber-voice-skill install --target claude-code
+npx --yes --package @agentfiber/voice@0.1.3 agentfiber-voice-skill install --target claude-code
 ```
 
 This copies the skill to `.claude/skills/agentfiber-voice`.
@@ -48,7 +48,7 @@ This copies the skill to `.claude/skills/agentfiber-voice`.
 For Codex and other tools that discover the open `.agents` convention:
 
 ```sh
-npx --yes --package @agentfiber/voice@0.1.2 agentfiber-voice-skill install --target agents
+npx --yes --package @agentfiber/voice@0.1.3 agentfiber-voice-skill install --target agents
 ```
 
 This copies the skill to `.agents/skills/agentfiber-voice`. Use `--target all` to install both

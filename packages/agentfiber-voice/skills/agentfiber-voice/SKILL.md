@@ -87,10 +87,10 @@ npm `postinstall` hook or symlink a package cache into a project.
 
 ```sh
 # Claude Code project skill
-npx --yes --package @agentfiber/voice@0.1.2 agentfiber-voice-skill install --target claude-code
+npx --yes --package @agentfiber/voice@0.1.3 agentfiber-voice-skill install --target claude-code
 
 # Open Agent Skills / Codex project skill
-npx --yes --package @agentfiber/voice@0.1.2 agentfiber-voice-skill install --target agents
+npx --yes --package @agentfiber/voice@0.1.3 agentfiber-voice-skill install --target agents
 ```
 
 The destinations are `.claude/skills/agentfiber-voice` and

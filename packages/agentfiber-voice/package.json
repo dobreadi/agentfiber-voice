@@ -1,6 +1,6 @@
 {
   "name": "@agentfiber/voice",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Product-neutral deterministic voice matching and dispatch contracts for AgentFiber.",
   "license": "MIT",
   "repository": {
