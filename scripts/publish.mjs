@@ -133,6 +133,7 @@ async function main() {
         continue;
       }
       if (existing[i]) {
+        await waitForPublication(manifest, { integrity: existing[i].dist.integrity });
         report(`Already published and verified: ${manifest.name}@${manifest.version}; identical package contents, no publish repeated.`);
         continue;
       }
